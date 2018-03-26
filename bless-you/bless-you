@@ -1,0 +1,60 @@
+#!/usr/bin/python
+import logging
+import time
+from bluepy.btle import Scanner, DefaultDelegate
+import paho.mqtt.publish as publish
+
+lastUpdate = {}
+
+logging.warning("Start")
+
+def handleBle(name, addr):
+    now = time.time()
+    old = 0
+    if addr in lastUpdate:
+        old = lastUpdate[addr]
+    print "Time:"  + str(now) + ", diff: " + str(now-old)
+    i1 = name.find(":)")
+    i2 = name.find(":(")
+    if now-old > 5:
+        val1 = None
+        val2 = None
+        if i1 == 0 and i2 > 0:
+            val1=name[2:i2]
+            val2=name[i2+2:]
+            lastUpdate[addr] = now
+            rf = addr.rfind(":")
+            if rf > 0:
+                addr=addr[rf+1:]
+                topic = "ble/" + addr
+            else:
+                topic = "ble/zzz"
+            logging.warning("Topic:" + topic + ", v1:" + val1 + ", v2:" + val2)
+            au = {"username":"olaa", "password":"karinj"}
+            publish.single(topic + "/val1" , val1, retain=True,
+                           hostname="192.168.1.182", auth=au })
+            publish.single(topic + "/val2" , val2, retain=True,
+                           hostname="192.168.1.182", auth=au })
+
+class ScanDelegate(DefaultDelegate):
+    def __init__(self):
+        DefaultDelegate.__init__(self)
+
+    def handleDiscovery(self, dev, isNewDev, isNewData):
+        name = dev.getValueText(0x09)
+        if isNewDev:
+            #print "Discovered device", dev.addr
+            if name:
+                print "New Dev NAME " + name + dev.addr
+        elif isNewData:
+            #print "Received new data from", dev.addr
+            if name:
+                print "New Data NAME " + name + dev.addr
+        if name:
+            handleBle(name , dev.addr)
+
+scanner = Scanner().withDelegate(ScanDelegate())
+
+while 1:
+    scanner.scan(60.0)
+
