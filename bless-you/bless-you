@@ -3,55 +3,119 @@ import logging
 import time
 from bluepy.btle import Scanner, DefaultDelegate
 import paho.mqtt.publish as publish
+import sys
+from ConfigParser import ConfigParser
+import os
+import requests
 
+
+dbg=False
+
+
+
+
+
+# Internal
+
+if len(sys.argv) > 1 and sys.argv[1]=="-d":
+    logging.basicConfig(level=logging.DEBUG)
+    dbg=True
+else:
+    logging.basicConfig(level=logging.INFO)
+
+#logging.basicConfig(level=logging.DEBUG)
 lastUpdate = {}
 
-logging.warning("Start")
+logging.debug("Debug is enabled!")
 
-def handleBle(name, addr):
+def dump(dev):
+
+    print "###########", dev.addr, time.ctime()
+    for (adtype, desc, value) in dev.getScanData():
+        print "  %s (%d) = %s" % (desc, adtype, value)
+
+def handleBle(dev):
+    # Only use known device:
+    da = dev.addr.lower()
+    if dbg:
+        logging.info( "Addr: "  + da)
+    if (not da in mqtt_macs) and (not da in ifttt_macs):
+        return
+
     now = time.time()
     old = 0
-    if addr in lastUpdate:
-        old = lastUpdate[addr]
-    print "Time:"  + str(now) + ", diff: " + str(now-old)
-    i1 = name.find(":)")
-    i2 = name.find(":(")
+    if dev.addr in lastUpdate:
+        old = lastUpdate[dev.addr]
+    logging.info( "Time:"  + str(now) + ", diff: " + str(now-old))
     if now-old > 5:
-        val1 = None
-        val2 = None
-        if i1 == 0 and i2 > 0:
-            val1=name[2:i2]
-            val2=name[i2+2:]
-            lastUpdate[addr] = now
-            rf = addr.rfind(":")
-            if rf > 0:
-                addr=addr[rf+1:]
-                topic = "ble/" + addr
-            else:
-                topic = "ble/zzz"
-            logging.warning("Topic:" + topic + ", v1:" + val1 + ", v2:" + val2)
-            au = {"username":"olaa", "password":"karinj"}
-            publish.single(topic + "/val1" , val1, retain=True,
-                           hostname="192.168.1.182", auth=au })
-            publish.single(topic + "/val2" , val2, retain=True,
-                           hostname="192.168.1.182", auth=au })
+        uuid="00000000"
+        if dev.getValueText(2):
+            logging.info("VAL2: " + dev.getValueText(2))
+            uuid=dev.getValueText(2)
+        if dev.getValueText(3):
+            logging.info("VAL3: " + dev.getValueText(3))
+        lastUpdate[da] = now
+        rf = da.rfind(":")
+        tail = da[rf+1:]
+        if da in ifttt_macs:
+            url = "https://maker.ifttt.com/trigger/"
+            url += "ble_" + tail
+            url += "/with/key/"
+            url += ifttt_key
+            payload = {'value1': uuid}
+
+            logging.info("Post to ifttt with event ble_" + tail)
+            r = requests.post(url, json=payload)
+
+        if da in mqtt_macs:
+            topic = "ble/" + tail + "/" + uuid
+            logging.info("Post to topic:" + topic + ", t:" + str(t) + ", h:" + str(h))
+            au = {"username":mqtt_user, "password":mqtt_pass}
+
+            publish.single(topic , uuid, retain=True,
+                           hostname=mqtt_server, port=mqtt_port, auth=au)
 
 class ScanDelegate(DefaultDelegate):
     def __init__(self):
         DefaultDelegate.__init__(self)
 
     def handleDiscovery(self, dev, isNewDev, isNewData):
-        name = dev.getValueText(0x09)
-        if isNewDev:
-            #print "Discovered device", dev.addr
-            if name:
-                print "New Dev NAME " + name + dev.addr
-        elif isNewData:
-            #print "Received new data from", dev.addr
-            if name:
-                print "New Data NAME " + name + dev.addr
-        if name:
-            handleBle(name , dev.addr)
+        if dbg:
+            dump(dev)
+
+        handleBle(dev)
+
+# Read config
+parser = ConfigParser()
+
+cfgs=[os.path.expanduser("~") + "/.bless-you.conf", "/usr/local/etc/bless-you.conf", "/usr/etc/bless-you.conf"]
+
+def getConf(parser, section, option, default=""):
+    if parser.has_option(section, option):
+        return parser.get(section, option)
+    else:
+        return default
+
+for cfg in cfgs:
+    r = parser.read(cfg)
+    if len(r) > 0:
+        logging.info("Using config " + cfg)
+        mqtt_server = getConf(parser, "mqtt", "server", "localhost")
+        mqtt_port = getConf(parser, "mqtt", "port")
+        mqtt_user = getConf(parser, "mqtt", "user")
+        mqtt_pass = getConf(parser, "mqtt", "pass")
+        if parser.has_option("mqtt", "mac_addresses"):
+            macs = parser.get("mqtt", "mac_addresses")
+            mqtt_macs = [x.strip() for x in macs.split(",")]
+
+        ifttt_key = getConf(parser, "ifttt", "key")
+        if parser.has_option("ifttt", "mac_addresses"):
+            macs = parser.get("ifttt", "mac_addresses")
+            ifttt_macs = [x.strip() for x in macs.split(",")]
+        break
+
+if len(r) == 0:
+    print("No config file in " + str(cfgs))
 
 scanner = Scanner().withDelegate(ScanDelegate())
 
