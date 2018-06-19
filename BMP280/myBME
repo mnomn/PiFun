@@ -1,0 +1,21 @@
+#!/usr/bin/python2
+from Adafruit_BME280 import *
+import paho.mqtt.publish as publish
+from time import sleep
+from local_secrets import * # Create file local_secrets.py
+
+sensor = BME280(t_mode=BME280_OSAMPLE_8, p_mode=BME280_OSAMPLE_8, h_mode=BME280_OSAMPLE_8, address=0x76)
+
+au = {"username":MQTT_USER, "password":MQTT_PASS} #defined in local_secrets.py
+
+while True:
+    degrees = sensor.read_temperature()
+    pascals = sensor.read_pressure()
+    hectopascals = pascals / 100
+    #print 'Temp      = {0:0.3f} deg C'.format(degrees)
+    #print 'Pressure  = {0:0.2f} hPa'.format(hectopascals)
+
+    publish.single("rpi/bmp/t" , degrees, retain=True, auth=au )
+
+    publish.single("rpi/bmp/p" , pascals, retain=True, auth=au )
+    sleep(60)
