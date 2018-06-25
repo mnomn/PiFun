@@ -1,0 +1,37 @@
+- platform: yr
+
+- platform: rest
+  name: "Balk T"
+  unit_of_measurement: "C"
+  resource: https://io.adafruit.com/api/v2/mnomn/feeds/d5t/data/last
+  value_template: '{{ value_json.value | round(1) }}'
+  headers:
+    x-aio-key: !secret aio_key
+
+- platform: rest
+  name: "Balk H"
+  unit_of_measurement: "%"
+  resource: https://io.adafruit.com/api/v2/mnomn/feeds/d5h/data/last
+  value_template: '{{ value_json.value | round(0) }}'
+  headers:
+    x-aio-key: !secret aio_key
+
+#- platform: rest
+#  name: "Temp öl"
+#  unit_of_measurement: "C"
+#  resource: https://io.adafruit.com/api/v2/mnomn/feeds/d2t/data/last
+#  value_template: '{{ value_json.value }}'
+#  headers:
+#    x-aio-key: !secret aio_key
+
+- platform: mqtt
+  name: "Vrum T"
+  unit_of_measurement: "C"
+  state_topic: "rpi/bmp/t"
+  value_template: '{{ value | round(1) }}'
+
+- platform: mqtt
+  name: "Vrum P"
+  unit_of_measurement: "hPa"
+  state_topic: "rpi/bmp/p"
+  value_template: '{{ value | multiply(0.01) | round(0) }}'

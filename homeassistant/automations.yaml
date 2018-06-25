@@ -1,0 +1,63 @@
+- alias: 'Tänd trapp kväll'
+  initial_state: True
+  hide_entity: False
+  trigger:
+    - platform: time
+      hours: 17
+      minutes: 30
+      seconds: 0
+ 
+    - platform: sun
+      event: sunset
+      offset: "-00:30:00"
+  action:
+    service: homeassistant.turn_on
+    entity_id:
+      - switch.sonoff101
+
+
+- alias: 'Släck trapp 23:30'
+  hide_entity: False
+  trigger:
+    platform: time
+    hours: 23
+    minutes: 30
+    seconds: 0
+  action:
+    service: homeassistant.turn_off
+    entity_id:
+      - switch.sonoff101
+
+- alias: 'Tänd trapp morgon'
+  trigger:
+    platform: time 
+    hours: 6
+    minutes: 45
+    seconds: 0
+  action:
+    service: homeassistant.turn_on
+    entity_id: switch.sonoff101
+
+- alias: 'Släck trapp morgon'
+  trigger:
+    platform: time
+    hours: 8
+    minutes: 30
+    seconds: 0
+  action:
+    service: homeassistant.turn_off
+    entity_id: switch.sonoff101
+
+- alias: 'IOT knapp'
+  trigger:
+    platform: mqtt
+    topic: mnomn/f/button
+  action:
+    - service: homeassistant.turn_on
+      entity_id:
+        - switch.sonoff101
+    - delay: 0:05
+    - service: homeassistant.turn_off
+      entity_id:
+        - switch.sonoff101
+
