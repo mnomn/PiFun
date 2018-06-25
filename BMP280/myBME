@@ -18,4 +18,4 @@ while True:
     publish.single("rpi/bmp/t" , degrees, retain=True, auth=au )
 
     publish.single("rpi/bmp/p" , pascals, retain=True, auth=au )
-    sleep(60)
+    sleep(5*60)

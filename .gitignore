@@ -2,6 +2,7 @@
 
 */bless-you.service
 *local_*
+*.service
 
 __pycache__/
 *.py[cod]
