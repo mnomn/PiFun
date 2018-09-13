@@ -34,9 +34,11 @@ echo "Generating $servicename..."
 
 echo "[Unit]
 Description=$bname
-After=network.target
+After=multi-user.target
 
 [Service]
+Restart=always
+RestartSec=5
 ExecStart=$fullname
 $usertext
 
