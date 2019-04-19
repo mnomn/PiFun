@@ -50,8 +50,10 @@ def handleBle(dev):
         if dev.getValueText(3):
             logging.info("VAL3: " + dev.getValueText(3))
         lastUpdate[da] = now
-        rf = da.rfind(":")
-        tail = da[rf+1:]
+        parts = da.split(":")
+        tail = "XX"
+        if len(parts) == 6:
+            tail = parts[4] + parts[5]
         if da in ifttt_macs:
             url = "https://maker.ifttt.com/trigger/"
             url += "ble_" + tail
@@ -63,7 +65,7 @@ def handleBle(dev):
             r = requests.post(url, json=payload)
 
         if da in mqtt_macs:
-            topic = "ble/" + tail + "/" + uuid
+            topic = "ble/" + tail
             logging.info("Post to topic:" + topic)
             au = {"username":mqtt_user, "password":mqtt_pass}
             publish.single(topic , uuid, retain=True,
