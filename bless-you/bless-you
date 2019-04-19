@@ -8,12 +8,7 @@ from ConfigParser import ConfigParser
 import os
 import requests
 
-
 dbg=False
-
-
-
-
 
 # Internal
 
@@ -69,9 +64,8 @@ def handleBle(dev):
 
         if da in mqtt_macs:
             topic = "ble/" + tail + "/" + uuid
-            logging.info("Post to topic:" + topic + ", t:" + str(t) + ", h:" + str(h))
+            logging.info("Post to topic:" + topic)
             au = {"username":mqtt_user, "password":mqtt_pass}
-
             publish.single(topic , uuid, retain=True,
                            hostname=mqtt_server, port=mqtt_port, auth=au)
 
@@ -97,6 +91,7 @@ def getConf(parser, section, option, default=""):
         return default
 
 for cfg in cfgs:
+    logging.debug("Try to read: " + cfg)
     r = parser.read(cfg)
     if len(r) > 0:
         logging.info("Using config " + cfg)
