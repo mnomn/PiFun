@@ -7,6 +7,7 @@ import sys
 from ConfigParser import ConfigParser
 import os
 import requests
+import json
 
 dbg=False
 
@@ -43,12 +44,25 @@ def handleBle(dev):
         old = lastUpdate[dev.addr]
     logging.info( "Time:"  + str(now) + ", diff: " + str(now-old))
     if now-old > 5:
-        uuid="00000000"
+        valDict = None
+        val="00000000"
         if dev.getValueText(2):
             logging.info("VAL2: " + dev.getValueText(2))
-            uuid=dev.getValueText(2)
+            val=dev.getValueText(2)
         if dev.getValueText(3):
             logging.info("VAL3: " + dev.getValueText(3))
+        if dev.getValueText(22):
+            val = dev.getValueText(22)
+            logging.info("VAL 22" + val)
+            # Is this generic format for eddystone
+            if val.startswith("aafe") and len(val)==40 :
+                vv1=val[4:16]
+                vv2=val[16:28]
+                vv3=val[28:40]
+                valDict = {'value1': int(vv1,16),
+                           'value2': int(vv2,16),
+                           'value3': int(vv3,16)}
+
         lastUpdate[da] = now
         parts = da.split(":")
         tail = "XX"
@@ -59,17 +73,22 @@ def handleBle(dev):
             url += "ble_" + tail
             url += "/with/key/"
             url += ifttt_key
-            payload = {'value1': uuid}
+            if valDict:
+                payload = valDict
+            else:
+                payload = {'value1': val}
 
             logging.info("Post to ifttt with event ble_" + tail)
             r = requests.post(url, json=payload)
 
         if da in mqtt_macs:
             topic = "ble/" + tail
-            logging.info("Post to topic:" + topic)
+            if valDict:
+                val = json.dumps(valDict)
+            logging.info("Post to topic:" + topic + ", uuid:" + val)
             au = {"username":mqtt_user, "password":mqtt_pass}
-            publish.single(topic , uuid, retain=True,
-                           hostname=mqtt_server, port=mqtt_port, auth=au)
+            # Do not ratein. Not suitable for events like this.
+            publish.single(topic, val, hostname=mqtt_server, port=mqtt_port, auth=au)
 
 class ScanDelegate(DefaultDelegate):
     def __init__(self):
