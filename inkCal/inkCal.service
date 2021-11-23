@@ -1,0 +1,13 @@
+[Unit]
+Description=E-Ink display Service
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+ExecStart=/usr/bin/python3 /home/pi/bin/incCal/app.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+Alias=syslog.service
