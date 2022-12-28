@@ -3,10 +3,13 @@
 
 name = inkCal
 prog = $(name).py
+config = $(name).json
 systemd-service = $(name).service
-target-dir=/home/pi/bin
 
-.PHONY: install_pi
+target_files = $(systemd-service) $(name).py $(name).json settings.py minus.png plus.png icon-cloud.png
+target-dir=/home/pi/inkCal
+
+.PHONY: install_rpi
 
 # Default values for remote system
 # Set environment variables or add to commandline:
@@ -15,9 +18,10 @@ REMOTE_HOST ?= pi@zerow.local
 
 install_rpi:
 	$(info "REMOTE_HOST: $(REMOTE_HOST)" )
-	scp $(prog) $(REMOTE_HOST):$(target-dir)/$(prog)
+	ssh $(REMOTE_HOST) "mkdir -p  $(target-dir)"
+#	scp $(prog) $(REMOTE_HOST):$(target-dir)/$(prog)
+#	scp $(config) $(REMOTE_HOST):$(target-dir)/$(config)
+	scp $(target_files) $(REMOTE_HOST):$(target-dir)/
 
-	# First copy to home folder, because of write rights
-	scp $(systemd-service) $(REMOTE_HOST):
-	# Copy to correct place as sudo
-	ssh $(REMOTE_HOST) "sudo cp $(systemd-service) /etc/systemd/system"
+	# Copy systemd to correct place as sudo
+	ssh $(REMOTE_HOST) "sudo cp $(target-dir)/$(systemd-service) /etc/systemd/system"
