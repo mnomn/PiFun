@@ -7,7 +7,10 @@ from font_hanken_grotesk import HankenGroteskBold, HankenGroteskMedium
 from font_intuitive import Intuitive
 from font_fredoka_one import FredokaOne
 import os
+import logging
 
+import arguments
+from weather import *
 from settings import *
 
 """
@@ -23,12 +26,12 @@ curl --header 'Content-Type: application/json' \
 """
 
 settings = Settings()
+weather = Weather(settings.get(Settings.CITY), settings.get(Settings.API_KEY))
+log = logging.getLogger("inkCal")
 
 app = Flask("Inky server")
 # 212 x 104
 ip = InkyPHAT('red')
-
-print ("IP" , dir(ip))
 
 #ip.set_rotation(x) in later versions
 if settings.get(Settings.ROTATION):
@@ -38,7 +41,8 @@ if settings.get(Settings.ROTATION):
 daynr = -1
 
 weekdays = ("Måndag","Tisdag","Onsdag","Torsdag","Fredag","Lördag","Söndag")
-months = ("-", "Jan","Feb","Mars","April","Maj","Juni","Juli", "Aug", "Sept", "Okt", "Nov", "Dec")
+#weekdays = ("Mån","Tis","Ons","Tor","Fre","Lör","Sön")
+months = ("-", "jan","feb","mars","april","maj","juni","juli", "aug", "sept", "okt", "nov", "dec")
 
 PATH = os.path.dirname(__file__)
 
@@ -79,7 +83,7 @@ def print_screen(message = None):
     draw = ImageDraw.Draw(img)
 
 #    hanken_bold_font = ImageFont.truetype(HankenGroteskBold, int(35))
-    top_font = ImageFont.truetype(Intuitive, int(25))
+    top_font = ImageFont.truetype(Intuitive, int(20))
     fredokaOne_font = ImageFont.truetype(FredokaOne, 30)
 
     # Use system font
@@ -87,30 +91,28 @@ def print_screen(message = None):
 
 
     td = datetime.today()
-    print("M", td.month, td.weekday())
-    top_str = f"{weekdays[td.weekday()]} {td.day} {months[td.month]}"
+    log.info(f"Weekday {td.weekday()} Month: td.month")
 
-    try:
-        print("Week no")
-        iso_cal = td.isocalendar()
-        print("Week no", iso_cal.week)
-    except:
-        print ("Week no failed")
+    iso_cal = td.isocalendar()
+    log.info("Week no", iso_cal.week)
+
+    top_str = f"{weekdays[td.weekday()]} {td.day} {months[td.month]} v{iso_cal.week}"
 
     _, top_h = top_font.getsize(top_str)
     ypadding = 5
     mid = top_h + 2* ypadding
-    print (f"Top str size {top_h} padding {ypadding}")
+    log.info(f"Top str size {top_h} padding {ypadding}")
 
     draw_bg(img, mid)
 
     if not message:
-        message = "No message"
+        log.info("No message, get weather")
+        weather_str = weather.getString()
+        message = weather_str
     bottom_font = fredokaOne_font
     if len(message)> 8:
         bottom_font = sys_font
-        print("Bottom is sys font")
-
+        log.info("Bottom is sys font")
 
     img_path = os.path.join(PATH, "icon-cloud.png")
     icon_image = Image.open(img_path)
@@ -141,15 +143,22 @@ def timer_update():
     global daynr
     day_now = datetime.today().weekday()
     if day_now != daynr:
-        print("New day", day_now)
+        log.info("New day", day_now)
         daynr = day_now
         print_screen()
 
-    print("Weekday", day_now)
+    log.info("Weekday", day_now)
 
     Timer(60, timer_update).start()
 
 
+def init():
+    args = arguments.get()
+
+    log.setLevel(level=args.log.upper())
+    log.info("Starting service")
+
 if __name__ == "__main__":
+    init()
     timer_update()
     app.run(port=8899, host="0.0.0.0")

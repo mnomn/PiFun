@@ -6,6 +6,7 @@ class Settings:
 
     ROTATION = "rotation"
     CITY = "city"
+    API_KEY = "api_key"
 
     def __init__(self, file_name = default_settings_file, json_data = None):
         if (json_data):
@@ -22,19 +23,3 @@ class Settings:
         if key in self.settings_json:
             return self.settings_json[key]
         
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

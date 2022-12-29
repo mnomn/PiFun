@@ -10,7 +10,12 @@ A systemd service starts a python script.
 
 The python script fetch weather, then prints the weather and date on the display.
 
-InkyPhat python library has to be installed on the pi.
+## Install
+
+- InkyPhat python library has to be installed on the pi.
+- Rename inkCal.json.template to inkCal.json.template and set correct vales.
+- Install with make install_rpi
+- Enable systemd (from ssh terminal) "sudo systemctl enable inkCal"
 
 ## Todo
 

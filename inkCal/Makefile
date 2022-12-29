@@ -6,7 +6,7 @@ prog = $(name).py
 config = $(name).json
 systemd-service = $(name).service
 
-target_files = $(systemd-service) $(name).py $(name).json settings.py minus.png plus.png icon-cloud.png
+target_files = $(systemd-service) $(name).py $(name).json arguments.py settings.py weather.py minus.png plus.png icon-cloud.png
 target-dir=/home/pi/inkCal
 
 .PHONY: install_rpi

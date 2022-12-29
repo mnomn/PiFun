@@ -1,0 +1,7 @@
+{
+    "_city": "City known by https://openweathermap.org/api/geocoding-api",
+    "city": "Malmoe,SE",
+    "_api:key": "API Key: https://openweathermap.org",
+    "api_key": "0123456789abcdef0000000000",
+    "rotation": true
+}
