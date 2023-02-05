@@ -1,5 +1,6 @@
 import logging
 import requests
+import time
 
 class Weather():    
 
@@ -10,11 +11,15 @@ class Weather():
         self.city = city
         self.api_key = api_key
 
+        self.weather_data = None
+        self.weather_data_time = None
+
         self.log = logging.getLogger("weather")
 
 
     def getString(self):
-        w = self.get()
+        w = self.get_weather_data()
+
         if w is None or "main" not in w or "weather" not in w or len(w["weather"]) < 1:
             return None
 
@@ -23,7 +28,39 @@ class Weather():
         weather_main = w["weather"][0]["main"]
         return f"{weather_main} {temper:.1f}C"
 
-    def get(self):
+    def getIcon(self):
+        w = self.get_weather_data()
+
+        if w is None or "main" not in w or "weather" not in w or len(w["weather"]) < 1:
+            return None
+
+        icon_code =  w["weather"][0]["icon"]
+
+        if icon_code.startswith("01"):
+            return "icon-sun.png"
+        if icon_code.startswith("02"):
+            return "icon-cloud.png"
+        if icon_code.startswith("03") or icon_code.startswith("04"):
+            return "icon-cloud.png"
+        if icon_code.startswith("09") or icon_code.startswith("10") or icon_code.startswith("11"):
+            return "icon-rain.png"
+        if icon_code.startswith("13"):
+            return "icon-snow.png"
+        if icon_code.startswith("50"):
+            # mist
+            return "icon-cloud.png"
+        return ""
+
+    def get_weather_data(self):
+        # Weather data exists
+
+        # TODO: Check that data is not to old
+        if self.weather_data and self.weather_data_time:
+            # Chack age. Max 3 hours
+            now = time.time()
+
+            if self.weather_data_time + 3*60*60 > now:
+                return self.weather_data
 
         if self.city is None or self.api_key is None:
             return None
@@ -58,7 +95,6 @@ class Weather():
             self.log.error(f"Failed to get weather: Error: ", {response.text})
             return None
 
-        # print ("Weather ", res.text)
         weather_json = response.json()
         if weather_json is None or "list" not in weather_json:
             self.log.error(f"No list with weather in response")
@@ -67,4 +103,6 @@ class Weather():
         weather_list = weather_json["list"]
         for weather in weather_list:
             if "dt_txt" in weather and "15:00:00" in weather["dt_txt"]:
+                self.weather_data = weather
+                self.weather_data_time = time.time()
                 return weather

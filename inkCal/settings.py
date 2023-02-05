@@ -17,7 +17,7 @@ class Settings:
             with open(file_name) as f:
                 self.settings_json = json.load(f)
         except:
-            print ("Cannot open json")
+            print (f"Cannot open file {file_name}")
 
     def get(self, key):
         if key in self.settings_json:

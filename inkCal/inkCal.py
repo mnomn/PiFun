@@ -91,36 +91,47 @@ def print_screen(message = None):
 
 
     td = datetime.today()
-    log.info(f"Weekday {td.weekday()} Month: td.month")
+    log.info(f"Weekday {td.weekday()} Month: {td.month}")
 
     iso_cal = td.isocalendar()
-    log.info("Week no", iso_cal.week)
+    log.info(f"Week no {iso_cal.week}")
 
     top_str = f"{weekdays[td.weekday()]} {td.day} {months[td.month]} v{iso_cal.week}"
 
     _, top_h = top_font.getsize(top_str)
     ypadding = 5
     mid = top_h + 2* ypadding
-    log.info(f"Top str size {top_h} padding {ypadding}")
+
+    top_text_pos = ypadding
+    mid_text_pos = mid + ypadding
+    bottom_text_pos = ip.height - top_h - 2* ypadding
+
+    log.info(f"String at (y) {top_text_pos} padding {mid_text_pos}, bottom {bottom_text_pos}")
 
     draw_bg(img, mid)
 
+#    bottom_font = fredokaOne_font
+    bottom_font = sys_font
+
     if not message:
         log.info("No message, get weather")
-        weather_str = weather.getString()
-        message = weather_str
-    bottom_font = fredokaOne_font
-    if len(message)> 8:
-        bottom_font = sys_font
-        log.info("Bottom is sys font")
+        message = ""
 
-    img_path = os.path.join(PATH, "icon-cloud.png")
-    icon_image = Image.open(img_path)
-    icon_mask = create_mask(icon_image)
-    img.paste(icon_image, (8, 60), icon_mask)
+    weather_ico = weather.getIcon()
 
-    print_center(top_str, draw, top_font, ypadding)
-    print_center(message, draw, bottom_font, mid + ypadding)
+    if weather_ico:
+        img_path = os.path.join(PATH, "icons", weather_ico)
+        log.info(f"use icon {img_path}")
+        icon_image = Image.open(img_path)
+        icon_mask = create_mask(icon_image)
+        img.paste(icon_image, (8, 60), icon_mask)
+    else:
+        log.info(f"No icon found")
+
+    print_center(top_str, draw, top_font, top_text_pos)
+    if message:
+        print_center(message, draw, bottom_font, mid_text_pos)
+    print_center(weather.getString(), draw, bottom_font, bottom_text_pos)
 
     ip.set_image(img)
     ip.show()
@@ -143,20 +154,22 @@ def timer_update():
     global daynr
     day_now = datetime.today().weekday()
     if day_now != daynr:
-        log.info("New day", day_now)
+        log.info(f"New day {day_now}")
         daynr = day_now
         print_screen()
 
-    log.info("Weekday", day_now)
+    log.info(f"Weekday {day_now}")
 
     Timer(60, timer_update).start()
 
 
 def init():
     args = arguments.get()
+    logging.basicConfig(level=args.log.upper())
 
-    log.setLevel(level=args.log.upper())
+#     log.setLevel(level=args.log.upper())
     log.info("Starting service")
+    log.warning("Starting service W")
 
 if __name__ == "__main__":
     init()

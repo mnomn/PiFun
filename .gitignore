@@ -7,9 +7,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# Prosuction settings, containing api key
-**/inkCal.json
-
 # C extensions
 *.so
 
